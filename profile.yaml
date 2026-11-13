@@ -1,0 +1,51 @@
+name: Ayush Saraswat
+email: ayushsaraswat961@gmail.com # Update this!
+phone: +919555171241 # Update this!
+links:
+  github: https://github.com/ayush5002466 # Update this!
+  portfolio: https://my-portfolio-six-theta-yil8fepa0s.vercel.app/ # Update this!
+
+education:
+  - degree: B.Tech Computer Science & Engineering (AI Specialization)
+    school: PSIT, AKTU
+    year: 2028
+
+experience:
+  - role: Backend Developer (Projects)
+    company: Academic & Personal
+    dates: "2024 - Present"
+    bullets:
+      - Built a Dockerized task manager API using Java 21, Spring Boot, PostgreSQL, and Swagger/OpenAPI.
+      - Built a Python job-discovery prototype using the Greenhouse JSON API, filtering rules, and 47 unit tests with CI via GitHub Actions.
+      - Reached Round 2 of the EY National Case Challenge (1,000+ teams).
+
+skills:
+  languages: [Java, Python, SQL]
+  frameworks: [Spring Boot, Spring Data JPA, REST APIs, JUnit, Swagger/OpenAPI]
+  databases: [PostgreSQL, MySQL]
+  tools: [Docker, Docker Compose, GitHub Actions, Git, Maven, Linux]
+
+stories:
+  - title: "Task Manager REST API"
+    situation: "Needed a robust backend project to demonstrate full-stack database integration."
+    task: "Build a REST API with five endpoints, persist to PostgreSQL, and handle errors gracefully."
+    action: "Used Java 21, Spring Boot, Spring Data JPA, and Docker Compose. Added request validation and a global exception handler."
+    result: "Successfully verified by six JUnit tests, fully documented with Swagger/OpenAPI, and containerized with PostgreSQL."
+  - title: "Opportunity Network OS"
+    situation: "Wanted to automate the process of finding and filtering job opportunities."
+    task: "Build a Python job-discovery prototype that pulls Greenhouse jobs and filters them."
+    action: "Integrated the Greenhouse JSON API, built 22 keyword and 11 exclusion rules, deduplicated results, and wrote 47 unit tests."
+    result: "Achieved a highly reliable job-filtering pipeline with GitHub Actions CI running on every push."
+
+preferences:
+  roles: ["Backend Intern", "Software Engineer Intern", "Java Developer Intern", "Python Developer Intern"]
+  locations: ["Remote", "Hybrid", "India"]
+  remote_ok: true
+
+dealbreakers:
+  - unpaid internship
+  - 6-day work week
+
+legal:
+  visa_status: "Indian citizen, no sponsorship needed"
+  notice_period: "Immediate"
