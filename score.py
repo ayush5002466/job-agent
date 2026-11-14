@@ -12,7 +12,7 @@ def score_pending():
         print(f"Scoring {j['title']} @ {j['company']}...")
         prompt = f"Score this job 0-100 for fit. Return JSON only: {{\"score\": int, \"rationale\": \"1 sentence\"}}\n\nCANDIDATE: {yaml.dump(profile)}\n\nJOB: {j['description']}"
         try:
-            r = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+            r = client.models.generate_content(model="gemini-3.8-flash", contents=prompt)
             text = r.text.strip().removeprefix("```json").removesuffix("```").strip()
             data = json.loads(text)
             new_status = "SCORED" if data["score"] >= 70 else "REJECTED"
