@@ -21,7 +21,7 @@ def loop():
             print("💤 Cycle done. Sleeping for 30 minutes...")
         except Exception as e:
             print(f"❌ Error: {e}")
-        time.sleep(1800)
+        time.sleep(300)
 
 if __name__ == "__main__":
     loop()
