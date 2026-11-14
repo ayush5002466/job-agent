@@ -2,7 +2,6 @@ import json, os, yaml
 from google import genai
 from db import get_db, update_status
 
-# This safely grabs the key from your system/GitHub secrets
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 profile = yaml.safe_load(open("profile.yaml"))
 
@@ -14,7 +13,7 @@ def draft_for_scored():
         q = "Why are you interested in this role?"
         prompt = f"Answer this question using ONLY the facts in this profile. 120 words max. No cliches.\nQuestion: {q}\nCompany: {j['company']}\nProfile: {yaml.dump(profile)}"
         try:
-            r = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+            r = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
             drafts = [{"question": q, "answer": r.text.strip()}]
             update_status(con, j["job_id"], "DRAFTED", draft_answers=json.dumps(drafts))
             print(" -> Drafted.")
