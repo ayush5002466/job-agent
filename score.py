@@ -1,4 +1,4 @@
-import json, os, yaml
+import json, os, yaml, time
 from google import genai
 from db import get_db, update_status
 
@@ -7,7 +7,8 @@ profile = yaml.safe_load(open("profile.yaml"))
 
 def score_pending():
     con = get_db()
-    jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED'").fetchall()
+    # Limit to 15 jobs per cycle so we don't hit the API rate limit
+    jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 15").fetchall()
     for j in jobs:
         print(f"Scoring {j['title']} @ {j['company']}...")
         prompt = f"Score this job 0-100 for fit. Return JSON only: {{\"score\": int, \"rationale\": \"1 sentence\"}}\n\nCANDIDATE: {yaml.dump(profile)}\n\nJOB: {j['description']}"
@@ -20,3 +21,4 @@ def score_pending():
             print(f" -> Score: {data['score']} ({new_status})")
         except Exception as e:
             print(f" -> Failed to parse: {e}")
+        time.sleep(4) # Wait 4 seconds to prevent rate limiting

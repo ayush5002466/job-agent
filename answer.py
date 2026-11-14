@@ -1,4 +1,4 @@
-import json, os, yaml
+import json, os, yaml, time
 from google import genai
 from db import get_db, update_status
 
@@ -19,3 +19,4 @@ def draft_for_scored():
             print(" -> Drafted.")
         except Exception as e:
             print(f" -> Failed: {e}")
+        time.sleep(4) # Wait 4 seconds to prevent rate limiting
