@@ -1,4 +1,5 @@
-import json, os, yaml, time
+import json, os, yaml, time, requests
+from bs4 import BeautifulSoup
 from google import genai
 from db import get_db, update_status
 
@@ -7,10 +8,24 @@ profile = yaml.safe_load(open("profile.yaml"))
 
 def score_pending():
     con = get_db()
-    jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 25").fetchall()
+    # Limit to 15 jobs per cycle so we don't get rate-limited or timeout
+    jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 15").fetchall()
+    
     for j in jobs:
-        print(f"Scoring {j['title']} @ {j['company']}...")
-        prompt = f"Score this job 0-100 for fit. Return JSON only: {{\"score\": int, \"rationale\": \"1 sentence\"}}\n\nCANDIDATE: {yaml.dump(profile)}\n\nJOB: {j['description']}"
+        print(f"Fetching details for {j['title']} @ {j['company']}...")
+        
+        # 1. Fetch the actual job description from the URL
+        try:
+            r = requests.get(j['url'], timeout=10)
+            soup = BeautifulSoup(r.text, 'html.parser')
+            # Extract text and remove extra spaces/newlines
+            description = ' '.join(soup.stripped_strings)[:4000] 
+        except Exception as e:
+            print(f" -> Failed to fetch page: {e}")
+            description = "Could not load description."
+            
+        print(f"Scoring {j['title']}...")
+        prompt = f"Score this job 0-100 for fit. Return JSON only: {{\"score\": int, \"rationale\": \"1 sentence\"}}\n\nCANDIDATE: {yaml.dump(profile)}\n\nJOB DESCRIPTION: {description}"
         
         success = False
         retries = 3
