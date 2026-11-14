@@ -29,7 +29,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          timeout 25m python3 worker.py || true
+          timeout 25m python3 -u worker.py || true
 
       # NEW: Upload the database and screenshots so you can download them!
       - name: Upload Application Database
