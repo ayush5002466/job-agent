@@ -30,3 +30,13 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           timeout 25m python3 worker.py || true
+
+      # NEW: Upload the database and screenshots so you can download them!
+      - name: Upload Application Database
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: application-data
+          path: |
+            data/applications.db
+            screenshots/
