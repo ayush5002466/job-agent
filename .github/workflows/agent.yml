@@ -28,10 +28,13 @@ jobs:
       - name: Run Agent
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
+          GEMINI_API_KEY_6: ${{ secrets.GEMINI_API_KEY_6 }}
         run: |
-          timeout 50m python3 -u worker.py || true
+          timeout 25m python3 -u worker.py || true
 
-      # NEW: Upload the database and screenshots so you can download them!
       - name: Upload Application Database
         uses: actions/upload-artifact@v4
         if: always()
