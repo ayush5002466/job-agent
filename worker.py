@@ -6,7 +6,7 @@ def auto_approve():
     con = get_db()
     jobs = con.execute("SELECT * FROM applications WHERE status='DRAFTED'").fetchall()
     for job in jobs:
-        if job['score'] >= 60: 
+        if job['score'] >= 40: 
             update_status(con, job['job_id'], 'AWAITING_APPROVAL')
             print(f"✅ Auto-approved {job['company']}")
 
