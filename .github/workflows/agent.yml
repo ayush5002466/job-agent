@@ -18,7 +18,6 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 1. RESTORE DATABASE
       - name: Restore Database
         uses: actions/cache/restore@v4
         with:
@@ -27,7 +26,6 @@ jobs:
           restore-keys: |
             job-db-
 
-      # 2. INSTALL DEPENDENCIES (Now with Groq!)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -35,16 +33,14 @@ jobs:
           playwright install chromium
           playwright install-deps
 
-      # 3. RUN THE AGENT
       - name: Run Agent
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
-          timeout 25m python3 -u worker.py || true
+          timeout 25m python3 -u worker.py
 
-      # 4. SAVE DATABASE
       - name: Save Database
         uses: actions/cache/save@v4
         if: always()
@@ -52,7 +48,6 @@ jobs:
           path: data/applications.db
           key: job-db-${{ github.run_id }}
 
-      # 5. UPLOAD ARTIFACT
       - name: Upload Application Database
         uses: actions/upload-artifact@v4
         if: always()
