@@ -1,17 +1,19 @@
 import requests
 from db import get_db
 
-# Added Indian tech hubs and global remote companies
+# Huge lists of companies across 6 platforms
 GREENHOUSE_COMPANIES = ["scaleai", "stripe", "reddit", "discord", "doordash", "instacart", "robinhood", "coinbase", "dropbox", "airbnb", "databricks", "postman", "razorpay", "cred", "swiggy", "zomato", "atlassian"]
 LEVER_COMPANIES = ["plaid", "spotify", "netflix", "twitch", "figma", "ramp", "vercel", "palantir", "gitlab", "hashicorp"]
 ASHBY_COMPANIES = ["openai", "notion", "supabase", "linear", "replit", "deel"]
+WORKABLE_COMPANIES = ["turing", "deel", "remote", "canonical", "trustpilot"]
+SMARTRECRUITERS_COMPANIES = ["Bosch", "Visa", "McDonalds", "Ubisoft", "Atos"]
+RECRUITEE_COMPANIES = ["heyflow", "peak", "bunq", "framer"]
 
 TARGET_KEYWORDS = [
     "java", "backend", "software engineer", "intern", "fresher", "graduate", 
     "junior", "entry level", "spring boot", "application developer", 
     "software development engineer", "software developer"
 ]
-
 BLOCK_KEYWORDS = ["senior", "lead", "manager", "principal", "staff", "director", "architect", "head of"]
 
 def is_target_job(title):
@@ -21,66 +23,80 @@ def is_target_job(title):
     return has_target and not is_blocked
 
 def discover():
-    print("Scraping Greenhouse, Lever, and Ashby APIs...")
+    print("Scraping 6 Platforms...")
     con = get_db()
     new = 0
-    
-    # --- 1. GREENHOUSE ---
-    print("Scanning Greenhouse...")
+
+    def insert_job(jid, company, title, url):
+        nonlocal new
+        cur = con.execute(
+            "INSERT OR IGNORE INTO applications (job_id, company, title, url, description, status) VALUES (?,?,?,?,?, 'DISCOVERED')",
+            (jid, company.capitalize(), title, url, "API Job")
+        )
+        new += cur.rowcount
+
+    # 1. GREENHOUSE
     for company in GREENHOUSE_COMPANIES:
-        url = f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs"
         try:
-            r = requests.get(url, timeout=10)
+            r = requests.get(f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs", timeout=10)
             if r.status_code == 200:
                 for j in r.json().get("jobs", []):
                     if is_target_job(j['title']):
-                        jid = f"gh_{company}_{j['id']}"
-                        cur = con.execute(
-                            "INSERT OR IGNORE INTO applications (job_id, company, title, url, description, status) VALUES (?,?,?,?,?, 'DISCOVERED')",
-                            (jid, company.capitalize(), j['title'], j['absolute_url'], "Greenhouse Job")
-                        )
-                        new += cur.rowcount
-        except Exception:
-            pass
+                        insert_job(f"gh_{company}_{j['id']}", company, j['title'], j['absolute_url'])
+        except: pass
 
-    # --- 2. LEVER ---
-    print("Scanning Lever...")
+    # 2. LEVER
     for company in LEVER_COMPANIES:
-        url = f"https://api.lever.co/v0/postings/{company}?mode=json"
         try:
-            r = requests.get(url, timeout=10)
+            r = requests.get(f"https://api.lever.co/v0/postings/{company}?mode=json", timeout=10)
             if r.status_code == 200:
                 for j in r.json():
                     if is_target_job(j['text']):
-                        jid = f"lever_{company}_{j['id']}"
-                        cur = con.execute(
-                            "INSERT OR IGNORE INTO applications (job_id, company, title, url, description, status) VALUES (?,?,?,?,?, 'DISCOVERED')",
-                            (jid, company.capitalize(), j['text'], j['hostedUrl'], "Lever Job")
-                        )
-                        new += cur.rowcount
-        except Exception:
-            pass
+                        insert_job(f"lever_{company}_{j['id']}", company, j['text'], j['hostedUrl'])
+        except: pass
 
-    # --- 3. ASHBY ---
-    print("Scanning Ashby...")
+    # 3. ASHBY
     for company in ASHBY_COMPANIES:
-        url = f"https://api.ashbyhq.com/posting-api/job-board/{company}"
         try:
-            r = requests.get(url, timeout=10)
+            r = requests.get(f"https://api.ashbyhq.com/posting-api/job-board/{company}", timeout=10)
             if r.status_code == 200:
                 for j in r.json().get("jobs", []):
                     if is_target_job(j['title']):
-                        jid = f"ashby_{company}_{j['id']}"
-                        cur = con.execute(
-                            "INSERT OR IGNORE INTO applications (job_id, company, title, url, description, status) VALUES (?,?,?,?,?, 'DISCOVERED')",
-                            (jid, company.capitalize(), j['title'], j['jobUrl'], "Ashby Job")
-                        )
-                        new += cur.rowcount
-        except Exception:
-            pass
+                        insert_job(f"ashby_{company}_{j['id']}", company, j['title'], j['jobUrl'])
+        except: pass
+
+    # 4. WORKABLE
+    for company in WORKABLE_COMPANIES:
+        try:
+            r = requests.get(f"https://apply.workable.com/api/v1/widget/accounts/{company}?details=true", timeout=10)
+            if r.status_code == 200:
+                for j in r.json().get("jobs", []):
+                    if is_target_job(j['title']):
+                        insert_job(f"workable_{company}_{j['shortcode']}", company, j['title'], j['url'])
+        except: pass
+
+    # 5. SMARTRECRUITERS
+    for company in SMARTRECRUITERS_COMPANIES:
+        try:
+            r = requests.get(f"https://api.smartrecruiters.com/v1/companies/{company}/postings?limit=100", timeout=10)
+            if r.status_code == 200:
+                for j in r.json().get("content", []):
+                    if is_target_job(j['name']):
+                        insert_job(f"sr_{company}_{j['id']}", company, j['name'], j['ref'])
+        except: pass
+
+    # 6. RECRUITEE
+    for company in RECRUITEE_COMPANIES:
+        try:
+            r = requests.get(f"https://{company}.recruitee.com/api/offers/", timeout=10)
+            if r.status_code == 200:
+                for j in r.json().get("offers", []):
+                    if is_target_job(j['title']):
+                        insert_job(f"recruitee_{company}_{j['id']}", company, j['title'], j['careers_url'])
+        except: pass
             
     con.commit()
-    print(f"Found {new} target jobs across all platforms.")
+    print(f"Found {new} target jobs across all 6 platforms.")
 
 if __name__ == "__main__":
     discover()
