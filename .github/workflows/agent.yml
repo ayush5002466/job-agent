@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 1. RESTORE DATABASE FROM CACHE
+      # 1. RESTORE DATABASE
       - name: Restore Database
         uses: actions/cache/restore@v4
         with:
@@ -27,24 +27,24 @@ jobs:
           restore-keys: |
             job-db-
 
+      # 2. INSTALL DEPENDENCIES (Now with Groq!)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install python-jobspy google-genai pyyaml playwright beautifulsoup4 requests
+          pip install python-jobspy pyyaml playwright beautifulsoup4 requests groq
           playwright install chromium
           playwright install-deps
 
+      # 3. RUN THE AGENT
       - name: Run Agent
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
-          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
-          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
-          GEMINI_API_KEY_6: ${{ secrets.GEMINI_API_KEY_6 }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
           timeout 25m python3 -u worker.py || true
 
-      # 2. SAVE UPDATED DATABASE TO CACHE
+      # 4. SAVE DATABASE
       - name: Save Database
         uses: actions/cache/save@v4
         if: always()
@@ -52,7 +52,7 @@ jobs:
           path: data/applications.db
           key: job-db-${{ github.run_id }}
 
-      # 3. UPLOAD ARTIFACT (For you to download and view)
+      # 5. UPLOAD ARTIFACT
       - name: Upload Application Database
         uses: actions/upload-artifact@v4
         if: always()
