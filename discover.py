@@ -1,26 +1,22 @@
 import requests
 from db import get_db
 
-# Expanded list of companies across Greenhouse, Lever, and Ashby
-GREENHOUSE_COMPANIES = ["scaleai", "stripe", "reddit", "discord", "doordash", "instacart", "robinhood", "coinbase", "dropbox", "airbnb", "databricks", "slack"]
-LEVER_COMPANIES = ["plaid", "spotify", "netflix", "twitch", "figma", "ramp", "vercel", "palantir"]
-ASHBY_COMPANIES = ["openai", "notion", "supabase", "linear", "replit"]
+# Added Indian tech hubs and global remote companies
+GREENHOUSE_COMPANIES = ["scaleai", "stripe", "reddit", "discord", "doordash", "instacart", "robinhood", "coinbase", "dropbox", "airbnb", "databricks", "postman", "razorpay", "cred", "swiggy", "zomato", "atlassian"]
+LEVER_COMPANIES = ["plaid", "spotify", "netflix", "twitch", "figma", "ramp", "vercel", "palantir", "gitlab", "hashicorp"]
+ASHBY_COMPANIES = ["openai", "notion", "supabase", "linear", "replit", "deel"]
 
-# Target keywords you want
 TARGET_KEYWORDS = [
     "java", "backend", "software engineer", "intern", "fresher", "graduate", 
     "junior", "entry level", "spring boot", "application developer", 
     "software development engineer", "software developer"
 ]
 
-# Words that mean the job is too senior for you
 BLOCK_KEYWORDS = ["senior", "lead", "manager", "principal", "staff", "director", "architect", "head of"]
 
 def is_target_job(title):
     title_lower = title.lower()
-    # 1. Must contain at least one target keyword
     has_target = any(kw in title_lower for kw in TARGET_KEYWORDS)
-    # 2. Must NOT contain any senior-level keywords
     is_blocked = any(bad in title_lower for bad in BLOCK_KEYWORDS)
     return has_target and not is_blocked
 
@@ -44,8 +40,8 @@ def discover():
                             (jid, company.capitalize(), j['title'], j['absolute_url'], "Greenhouse Job")
                         )
                         new += cur.rowcount
-        except Exception as e:
-            print(f"  Failed GH {company}: {e}")
+        except Exception:
+            pass
 
     # --- 2. LEVER ---
     print("Scanning Lever...")
@@ -62,7 +58,7 @@ def discover():
                             (jid, company.capitalize(), j['text'], j['hostedUrl'], "Lever Job")
                         )
                         new += cur.rowcount
-        except Exception as e:
+        except Exception:
             pass
 
     # --- 3. ASHBY ---
@@ -80,7 +76,7 @@ def discover():
                             (jid, company.capitalize(), j['title'], j['jobUrl'], "Ashby Job")
                         )
                         new += cur.rowcount
-        except Exception as e:
+        except Exception:
             pass
             
     con.commit()
