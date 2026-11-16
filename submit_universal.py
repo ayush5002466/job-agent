@@ -5,6 +5,7 @@ import datetime
 from pathlib import Path
 from playwright.async_api import async_playwright
 from db import get_db, update_status
+from otp_reader import get_otp
 
 async def safe_fill(page, label, text):
     try:
@@ -14,30 +15,18 @@ async def safe_fill(page, label, text):
         print(f"  ⏭️ Skipped '{label}'")
 
 async def force_dropdown(page, question_part, option_text):
-    """Aggressive method to find and click Greenhouse React dropdowns"""
     try:
-        # 1. Find the text on the page
         q_element = page.get_by_text(question_part, exact=False).first
-        
-        # 2. Look for the closest parent container that holds the question
-        parent = q_element.locator("xpath=ancestor::div[contains(@class, 'application-question') or contains(@class, 'field') or contains(@class, 'select')]").first
+        parent = q_element.locator("xpath=ancestor::div[contains(@class, 'application-question') or contains(@class, 'field')]").first
         if await parent.count() == 0:
             parent = q_element.locator("xpath=..").first
-            
-        # 3. Find the clickable dropdown box inside that container
-        dropdown = parent.locator("div[role='combobox'], input[role='combobox'], .select__control").first
+        dropdown = parent.locator("div[role='combobox'], input[role='combobox']").first
         await dropdown.click(timeout=5000)
-        await page.wait_for_timeout(1000) # Wait for menu to open
-        
-        # 4. Click the exact option from the list (using role=option or text)
-        option = page.get_by_role("option", name=option_text, exact=True).first
-        if await option.count() == 0:
-            # Fallback to text search
-            option = page.get_by_text(option_text, exact=True).last
-        
-        await option.click(timeout=5000)
+        await page.wait_for_timeout(800) 
+        await page.keyboard.type(option_text, delay=100)
+        await page.wait_for_timeout(500)
+        await page.keyboard.press("Enter")
         print(f"  ✅ Selected '{option_text}' for '{question_part[:25]}...'")
-        
     except Exception as e:
         print(f"  ⚠️ Failed dropdown '{question_part[:25]}...'")
 
@@ -64,7 +53,7 @@ async def submit_one(job):
             await safe_fill(page, "Email", "ayushsaraswat861@gmail.com")
             await safe_fill(page, "Phone", "+919555171241")
 
-            print("  -> Filling Location (Google Autocomplete)...")
+            print("  -> Filling Location...")
             try:
                 loc = page.get_by_label("Location (City)", exact=False).first
                 await loc.click() 
@@ -73,13 +62,13 @@ async def submit_one(job):
                 suggestion = page.locator(".pac-item").first
                 if await suggestion.count() > 0:
                     await suggestion.click()
-                    print("  ✅ Location selected from dropdown.")
+                    print("  ✅ Location selected.")
                 else:
                     await loc.press("ArrowDown")
                     await loc.press("Enter")
-                    print("  ✅ Location filled via keyboard.")
-            except Exception as e:
-                print(f"  ⏭️ Location failed.")
+                    print("  ✅ Location filled.")
+            except Exception:
+                print(f"  ⏭️ Location skipped.")
 
             print("  -> Uploading resume...")
             try:
@@ -87,8 +76,8 @@ async def submit_one(job):
                     await page.get_by_role("button", name="Attach", exact=True).first.click(timeout=5000)
                 file_chooser = await fc_info.value
                 await file_chooser.set_files(resume_file)
-                print("  ✅ Resume uploaded via Attach button.")
-            except Exception as e:
+                print("  ✅ Resume uploaded.")
+            except Exception:
                 print(f"  ⚠️ Resume upload failed.")
 
             print("  -> Filling Dropdowns...")
@@ -104,61 +93,62 @@ async def submit_one(job):
                 if i < textarea_count:
                     try:
                         await textareas.nth(i).fill(a["answer"], timeout=3000)
-                        print(f"  ✅ Filled textarea {i+1}")
                     except:
                         pass
 
             print("  -> Clicking Submit Button...")
             try:
-                # Sometimes the button is disabled, so we force it to wait
                 submit_btn = page.get_by_role("button", name="Submit application", exact=False).first
                 await submit_btn.click(timeout=5000)
                 print("  🚀 Clicked Submit!")
                 
                 await page.wait_for_timeout(4000) 
-                
-                # --- HUMAN IN THE LOOP CHECK ---
                 page_content = await page.content()
+                
                 if "Security code" in page_content or "verification code" in page_content.lower():
-                    print("\n" + "="*60)
-                    print("🚨 HUMAN VERIFICATION REQUIRED! 🚨")
-                    print("Greenhouse sent an OTP code to your email.")
-                    print("Please look at the open browser window, type the code, and click Submit.")
-                    print("The bot is pausing for 2 minutes to give you time...")
-                    print("="*60 + "\n")
+                    print("\n🚨 OTP REQUIRED! Fetching from Gmail...")
+                    otp_code = get_otp()
                     
-                    update_status(get_db(), job["job_id"], "WAITING_FOR_USER")
-                    
-                    try:
-                        # Wait for the thank you page
-                        await page.wait_for_selector("text='Thank you'", timeout=120000, state="visible")
-                        print("  ✅ User successfully entered the code and submitted!")
-                        await page.screenshot(path=f"{shot_path}_submitted.png", full_page=True)
-                        update_status(get_db(), job["job_id"], "SUBMITTED", screenshot_path=f"{shot_path}_submitted.png")
-                    except Exception:
-                        print("  ⚠️ Timed out waiting for you to verify. Moving on.")
-                        update_status(get_db(), job["job_id"], "FAILED_VERIFICATION")
+                    if otp_code:
+                        print(f"  ✅ Found OTP: {otp_code}")
+                        # Fill the 8 boxes
+                        inputs = page.locator("input[type='text'], input[type='tel']")
+                        for i, char in enumerate(otp_code):
+                            if i < await inputs.count():
+                                await inputs.nth(i).fill(char)
+                                await page.wait_for_timeout(100)
                         
-                else:
-                    if "Thank you" in page_content:
-                        print("  ✅ Submitted successfully without verification!")
-                        update_status(get_db(), job["job_id"], "SUBMITTED")
+                        # Click submit again
+                        await page.get_by_role("button", name="Submit application", exact=False).first.click()
+                        await page.wait_for_timeout(5000)
+                        print("  🚀 Submitted OTP!")
                     else:
-                        print("  ⚠️ Form submitted, but neither Thank You nor Verification found.")
-                        update_status(get_db(), job["job_id"], "SUBMITTED")
+                        print("  ❌ Could not fetch OTP.")
+                        update_status(get_db(), job["job_id"], "FAILED_OTP")
+                        return
 
+                # Check if success
+                page_content = await page.content()
+                if "Thank you" in page_content or "application has been submitted" in page_content.lower():
+                    print("  ✅ Submitted successfully!")
+                    await page.screenshot(path=f"{shot_path}_submitted.png", full_page=True)
+                    update_status(get_db(), job["job_id"], "SUBMITTED", screenshot_path=f"{shot_path}_submitted.png")
+                else:
+                    print("  ⚠️ Could not confirm success. Check screenshot.")
+                    await page.screenshot(path=f"{shot_path}_unknown.png", full_page=True)
+                    update_status(get_db(), job["job_id"], "UNKNOWN")
+                    
             except Exception as e:
                 print(f"  ❌ Could not click submit: {e}")
 
         except Exception as e:
             print(f"  ❌ Major error: {e}")
         finally:
-            print("  Closing browser...")
             await browser.close()
 
 async def main():
     con = get_db()
-    job = con.execute("SELECT * FROM applications WHERE job_id='freeform_1'").fetchone()
+    job = con.execute("SELECT * FROM applications WHERE status='AWAITING_APPROVAL' LIMIT 1").fetchone()
     if job:
         await submit_one(job)
 
