@@ -6,7 +6,6 @@ from db import get_db, update_status
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 profile = yaml.safe_load(open("profile.yaml"))
 
-# Hardcoded priority keywords — these skip AI entirely
 PRIORITY_KEYWORDS = ["intern", "new grad", "graduate", "fresher", "junior", "entry level", "trainee", "apprentice"]
 
 def is_priority(title):
@@ -18,14 +17,12 @@ def score_pending():
     jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 50").fetchall()
     
     for j in jobs:
-        # ===== PRIORITY BYPASS =====
         if is_priority(j['title']):
             print(f"⭐ PRIORITY: {j['title']} @ {j['company']} — auto-scoring 85")
             update_status(con, j["job_id"], "SCORED", score=85, 
                           rationale=f"Priority job (matched '{j['title']}'). Auto-scored for immediate application.")
             continue
         
-        # ===== AI PATH FOR EVERYTHING ELSE =====
         print(f"Fetching details for {j['title']} @ {j['company']}...")
         try:
             r = requests.get(j['url'], timeout=10)
