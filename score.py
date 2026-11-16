@@ -7,7 +7,7 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 profile = yaml.safe_load(open("profile.yaml"))
 
 # Hardcoded priority keywords — these skip AI entirely
-PRIORITY_KEYWORDS = ["intern", "new grad", "graduate", "fresher", "junior", "entry level", "trainee", "apprentice"]
+PRIORITY_KEYWORDS = ["intern", "new grad", "graduate", "fresher", ...]
 
 def is_priority(title):
     title_lower = title.lower()
