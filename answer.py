@@ -6,7 +6,7 @@ from db import get_db, update_status
 KEYS = [v for k, v in os.environ.items() if k.startswith("GEMINI_API_KEY") and v]
 current_key_index = 0
 client = genai.Client(api_key=KEYS[current_key_index])
-profile = yaml.safe_load(open("profile.yaml"))
+profile = {"name": "Ayush Saraswat", "skills": ["Java", "Python"]}
 
 def draft_for_scored():
     global current_key_index, client
