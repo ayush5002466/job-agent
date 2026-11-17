@@ -4,7 +4,14 @@ from groq import Groq
 from db import get_db, update_status
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-profile = yaml.safe_load(open("profile.yaml"))
+
+# Hardcoded profile to bypass missing file error
+profile = {
+    "name": "Ayush Saraswat",
+    "education": [{"degree": "B.Tech Computer Science", "school": "PSIT, AKTU", "year": 2028}],
+    "skills": {"languages": ["Java", "Python", "SQL"], "frameworks": ["Spring Boot", "REST APIs"]},
+    "preferences": {"roles": ["Intern", "Software Engineer"]}
+}
 
 PRIORITY_KEYWORDS = ["intern", "new grad", "graduate", "fresher", "junior", "entry level", "trainee", "apprentice"]
 
