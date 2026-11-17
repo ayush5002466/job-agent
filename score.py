@@ -1,11 +1,11 @@
-import json, os, yaml, time, requests
+import json, os, time, requests
 from bs4 import BeautifulSoup
 from groq import Groq
 from db import get_db, update_status
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Hardcoded profile to bypass missing file error
+# Hardcoded profile (no profile.yaml needed)
 profile = {
     "name": "Ayush Saraswat",
     "education": [{"degree": "B.Tech Computer Science", "school": "PSIT, AKTU", "year": 2028}],
@@ -41,7 +41,7 @@ def score_pending():
         print(f"Scoring {j['title']}...")
         
         prompt = f"""Score this job 0-100 for fit.
-CANDIDATE: {yaml.dump(profile)}
+CANDIDATE: {json.dumps(profile)}
 JOB: {description}
 
 RULES:
