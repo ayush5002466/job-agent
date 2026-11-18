@@ -24,6 +24,7 @@ def run_application_engine():
 if __name__ == "__main__":
     for cycle in range(3):
         print(f"\n🔄 Cycle {cycle + 1}/3")
+        discover.discover()           # <--- THIS WAS MISSING
         score.score_pending()
         answer.draft_for_scored()
         auto_approve()
