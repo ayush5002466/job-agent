@@ -64,5 +64,4 @@ Return JSON only: {{"score": int, "rationale": "1 sentence"}}"""
             
         except Exception as e:
             print(f" -> Error processing {j['title']}: {e}")
-            # Catch error and move to next job, don't crash
         time.sleep(1)
