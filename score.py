@@ -5,14 +5,9 @@ from db import get_db, update_status
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-profile = {
-    "name": "Ayush Saraswat",
-    "education": [{"degree": "B.Tech Computer Science", "school": "PSIT, AKTU", "year": 2028}],
-    "skills": {"languages": ["Java", "Python", "SQL"], "frameworks": ["Spring Boot", "REST APIs"]},
-    "preferences": {"roles": ["Intern", "Software Engineer"]}
-}
+profile = {"name": "Ayush Saraswat", "skills": ["Java", "Python", "Spring Boot"]}
 
-# Only prioritize tech-related internships
+# Only auto-score tech internships, not finance internships
 PRIORITY_KEYWORDS = ["intern", "new grad", "graduate", "fresher", "junior", "entry level", "trainee", "apprentice"]
 TECH_KEYWORDS = ["software", "developer", "backend", "frontend", "java", "python", "engineer", "data", "cloud", "devops", "tech"]
 
@@ -27,10 +22,10 @@ def score_pending():
     jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 50").fetchall()
     
     for j in jobs:
+        # TECH PRIORITY BYPASS
         if is_priority(j['title']):
             print(f"⭐ PRIORITY: {j['title']} @ {j['company']} — auto-scoring 85")
-            update_status(con, j["job_id"], "SCORED", score=85, 
-                          rationale=f"Priority tech job (matched '{j['title']}'). Auto-scored for immediate application.")
+            update_status(con, j["job_id"], "SCORED", score=85, rationale="Priority tech job. Auto-scored.")
             continue
         
         print(f"Fetching details for {j['title']} @ {j['company']}...")
@@ -67,4 +62,5 @@ Return JSON only: {{"score": int, "rationale": "1 sentence"}}"""
             print(f" -> Score: {data['score']} ({new_status})")
         except Exception as e:
             print(f" -> Failed: {e}")
+            # CATCH ERRORS WITHOUT CRASHING THE LOOP
         time.sleep(1)
