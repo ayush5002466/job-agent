@@ -1,11 +1,10 @@
-import json, os, time, requests
+import json, os, yaml, time, requests
 from bs4 import BeautifulSoup
 from groq import Groq
 from db import get_db, update_status
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Hardcoded profile (no profile.yaml needed)
 profile = {
     "name": "Ayush Saraswat",
     "education": [{"degree": "B.Tech Computer Science", "school": "PSIT, AKTU", "year": 2028}],
@@ -13,11 +12,15 @@ profile = {
     "preferences": {"roles": ["Intern", "Software Engineer"]}
 }
 
+# Only prioritize tech-related internships
 PRIORITY_KEYWORDS = ["intern", "new grad", "graduate", "fresher", "junior", "entry level", "trainee", "apprentice"]
+TECH_KEYWORDS = ["software", "developer", "backend", "frontend", "java", "python", "engineer", "data", "cloud", "devops", "tech"]
 
 def is_priority(title):
     title_lower = title.lower()
-    return any(kw in title_lower for kw in PRIORITY_KEYWORDS)
+    has_priority = any(kw in title_lower for kw in PRIORITY_KEYWORDS)
+    has_tech = any(kw in title_lower for kw in TECH_KEYWORDS)
+    return has_priority and has_tech
 
 def score_pending():
     con = get_db()
@@ -27,7 +30,7 @@ def score_pending():
         if is_priority(j['title']):
             print(f"⭐ PRIORITY: {j['title']} @ {j['company']} — auto-scoring 85")
             update_status(con, j["job_id"], "SCORED", score=85, 
-                          rationale=f"Priority job (matched '{j['title']}'). Auto-scored for immediate application.")
+                          rationale=f"Priority tech job (matched '{j['title']}'). Auto-scored for immediate application.")
             continue
         
         print(f"Fetching details for {j['title']} @ {j['company']}...")
