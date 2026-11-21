@@ -52,8 +52,8 @@ Return JSON only: {{"score": int, "rationale": "1 sentence"}}"""
             
             chat_completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                # CHANGED THE MODEL TO THE NEW GROQ MODEL
-                model="llama3-8b-8192",
+                # USING THE CURRENT RECOMMENDED MODEL
+                model="openai/gpt-oss-20b",
                 response_format={"type": "json_object"}
             )
             text = chat_completion.choices[0].message.content
