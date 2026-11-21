@@ -18,9 +18,9 @@ def is_priority(title):
 
 def score_pending():
     con = get_db()
-    # ONLY PROCESS 5 JOBS PER RUN TO AVOID RATE LIMITS
-    jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 5").fetchall()
-    print(f"Found {len(jobs)} DISCOVERED jobs to process.")
+    # NOW WE ALSO PICK UP JOBS THAT PREVIOUSLY FAILED (ERROR)
+    jobs = con.execute("SELECT * FROM applications WHERE status IN ('DISCOVERED', 'ERROR') LIMIT 5").fetchall()
+    print(f"Found {len(jobs)} jobs to process.")
     
     for j in jobs:
         try:
@@ -52,7 +52,8 @@ Return JSON only: {{"score": int, "rationale": "1 sentence"}}"""
             
             chat_completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant",
+                # CHANGED THE MODEL TO THE NEW GROQ MODEL
+                model="llama3-8b-8192",
                 response_format={"type": "json_object"}
             )
             text = chat_completion.choices[0].message.content
@@ -63,8 +64,6 @@ Return JSON only: {{"score": int, "rationale": "1 sentence"}}"""
             
         except Exception as e:
             print(f" -> Error processing {j['title']}: {e}")
-            # Save error to DB to see what happened
             update_status(con, j["job_id"], "ERROR", score=0, rationale=f"Error: {str(e)[:200]}")
         
-        # SLEEP FOR 5 SECONDS TO PREVENT RATE LIMITS
         time.sleep(5)
