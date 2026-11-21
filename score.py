@@ -7,7 +7,6 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 profile = {"name": "Ayush Saraswat", "skills": ["Java", "Python", "Spring Boot"]}
 
-# Only prioritize tech-related internships, skip finance/HR
 PRIORITY_KEYWORDS = ["intern", "new grad", "graduate", "fresher", "junior", "entry level", "trainee", "apprentice"]
 TECH_KEYWORDS = ["software", "developer", "backend", "frontend", "java", "python", "engineer", "data", "cloud", "devops", "tech"]
 
@@ -19,12 +18,12 @@ def is_priority(title):
 
 def score_pending():
     con = get_db()
-    jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 50").fetchall()
+    # ONLY PROCESS 5 JOBS PER RUN TO AVOID RATE LIMITS
+    jobs = con.execute("SELECT * FROM applications WHERE status='DISCOVERED' LIMIT 5").fetchall()
     print(f"Found {len(jobs)} DISCOVERED jobs to process.")
     
     for j in jobs:
         try:
-            # TECH PRIORITY BYPASS
             if is_priority(j['title']):
                 print(f"⭐ PRIORITY: {j['title']} @ {j['company']} — auto-scoring 85")
                 update_status(con, j["job_id"], "SCORED", score=85, rationale="Priority tech job. Auto-scored.")
@@ -64,4 +63,8 @@ Return JSON only: {{"score": int, "rationale": "1 sentence"}}"""
             
         except Exception as e:
             print(f" -> Error processing {j['title']}: {e}")
-        time.sleep(1)
+            # Save error to DB to see what happened
+            update_status(con, j["job_id"], "ERROR", score=0, rationale=f"Error: {str(e)[:200]}")
+        
+        # SLEEP FOR 5 SECONDS TO PREVENT RATE LIMITS
+        time.sleep(5)
