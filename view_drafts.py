@@ -1,27 +1,41 @@
-from db import get_db
-import json
+# Fix for SQLite version on Streamlit Cloud
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
-def show_drafts():
+import streamlit as st
+import json
+from db import get_db
+
+# Set up the page layout
+st.set_page_config(page_title="Job Agent Dashboard", page_icon="🤖", layout="wide")
+
+st.title("🤖 AI Job Agent Dashboard")
+st.write("Here are the jobs the agent has drafted applications for, waiting for your review.")
+
+try:
     con = get_db()
     # Look for both DRAFTED and AWAITING_APPROVAL statuses
     jobs = con.execute("SELECT * FROM applications WHERE status IN ('DRAFTED', 'AWAITING_APPROVAL')").fetchall()
     
     if not jobs:
-        print("No drafts found in the database.")
-        return
+        st.info("No drafts found in the database yet. The agent is still working!")
+    else:
+        for j in jobs:
+            # Create a dropdown for each job
+            with st.expander(f"🏢 {j['title']} @ {j['company']} — Score: {j['score']}"):
+                st.markdown(f"**Rationale:** {j['rationale']}")
+                st.markdown(f"**URL:** [Apply Here]({j['url']})")
+                st.divider()
+                
+                st.write("### 📝 Drafted Answers")
+                answers = json.loads(j["draft_answers"] or "[]")
+                if not answers:
+                    st.write("No answers drafted yet.")
+                
+                for a in answers:
+                    st.write(f"**❓ {a['question']}**")
+                    st.info(a['answer'])
 
-    for j in jobs:
-        print("\n" + "=" * 60)
-        print(f"🏢 {j['title']} @ {j['company']}")
-        print(f"⭐ Score: {j['score']} — {j['rationale']}")
-        print(f"🔗 URL: {j['url']}")
-        print("=" * 60)
-        
-        answers = json.loads(j["draft_answers"] or "[]")
-        for a in answers:
-            print(f"\n❓ Q: {a['question']}")
-            print(f"💬 A: {a['answer']}")
-        print("=" * 60 + "\n")
-
-if __name__ == "__main__":
-    show_drafts()
+except Exception as e:
+    st.error(f"Error loading dashboard: {e}")
